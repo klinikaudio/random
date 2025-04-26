@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arrow Heart Break</title>
+    <style>
+        body { margin: 0; overflow: hidden; background-color: #111; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+    <script type="module">
+        import * as THREE from 'three';
+        import { FontLoader } from 'three/addons/loaders/FontLoader.js';
+        import { TextGeometry } from 'three/addons/geometries/TextGeometry.js';
+
+        let scene, camera, renderer;
+        let heart, textMesh;
+        let fragments = [];
+        let clock = new THREE.Clock();
+
+        // --- Configuration ---
+        const arrowSpeed = 35;
+        const heartPositionZ = -100;
+        const heartScale = 15;
+        const breakDistance = 15;
+        const fragmentCount = 80;
+        const fragmentSpreadSpeed = 50;
+        const fragmentLife = 2.5;
+
+        const textContent = "BW 4 AS";
+        const textSize = 6; // Base size (for wider screens)
+        const textHeight = 0.5;
+        const textColor = 0xff0000;
+        const textCurveSegments = 2;
+        const textBevelSegments = 1;
+        const textBevelThickness = 0.1;
+        const textBevelSize = 0.1;
+        const textMetalness = 0.2;
+        const textRoughness = 0.7;
+        const textPositionZOffset = -2;
+
+        // *** NEW: Configuration for responsive text scaling ***
+        const mobileAspectThreshold = 1.0; // Aspect ratio (W/H) below which scaling is applied
+        const mobileTextScaleFactor = 0.15; // Factor to scale text down on mobile (e.g., 0.7 = 70%)
+
+        let heartBroken = false;
+        let fontLoaded = false;
+        let font = null;
+
+        const fontURL = 'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/fonts/helvetiker_regular.typeface.json';
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.Fog(0x111111, 1, 150);
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.z = 50;
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setClearColor(0x111111);
+            document.body.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xcccccc);
+            scene.add(ambientLight);
+            const pointLight = new THREE.PointLight(0xffffff, 1.5, 200);
+            pointLight.position.set(10, 10, camera.position.z - 30);
+            scene.add(pointLight);
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            directionalLight.position.set(-1, 1, 2).normalize();
+            scene.add(directionalLight);
+
+            const loader = new FontLoader();
+            loader.load(fontURL, function (loadedFont) {
+                console.log("Font loaded successfully!");
+                font = loadedFont;
+                fontLoaded = true;
+                createText(); // Create text mesh
+                updateTextScale(); // *** NEW: Apply initial scaling ***
+                if (heartBroken && textMesh) {
+                    textMesh.visible = true;
+                }
+            },
+            (xhr) => { console.log( (xhr.loaded / xhr.total * 100) + '% font loaded' ); },
+            ( err ) => { console.error( 'An error happened loading font:', err ); }
+            );
+
+            createHeart();
+            window.addEventListener('resize', onWindowResize, false);
+            animate();
+        }
+
+        function createHeart() {
+            // ... (heart creation code remains the same)
+            const heartShape = new THREE.Shape();
+            const x = 0, y = 0;
+            heartShape.moveTo(x + 0.5, y + 0.5);
+            heartShape.bezierCurveTo(x + 0.5, y + 0.5, x + 0.4, y, x, y);
+            heartShape.bezierCurveTo(x - 0.6, y, x - 0.6, y + 0.7, x - 0.6, y + 0.7);
+            heartShape.bezierCurveTo(x - 0.6, y + 1.1, x - 0.3, y + 1.54, x + 0.5, y + 1.9);
+            heartShape.bezierCurveTo(x + 1.3, y + 1.54, x + 1.6, y + 1.1, x + 1.6, y + 0.7);
+            heartShape.bezierCurveTo(x + 1.6, y + 0.7, x + 1.6, y, x + 1.0, y);
+            heartShape.bezierCurveTo(x + 0.7, y, x + 0.5, y + 0.5, x + 0.5, y + 0.5);
+
+            const extrudeSettings = { depth: 0.8, bevelEnabled: true, bevelSegments: 2, steps: 2, bevelSize: 0.1, bevelThickness: 0.1 };
+            const geometry = new THREE.ExtrudeGeometry(heartShape, extrudeSettings);
+            geometry.center();
+            const material = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.3, roughness: 0.6 });
+            heart = new THREE.Mesh(geometry, material);
+            heart.position.z = heartPositionZ;
+            heart.scale.set(heartScale, heartScale, heartScale);
+            heart.rotation.z = Math.PI;
+            scene.add(heart);
+        }
+
+        function createText() {
+            if (!fontLoaded || !font) return;
+            if (textMesh) return; // Don't recreate if it exists
+
+            const textGeometry = new TextGeometry(textContent, {
+                font: font,
+                size: textSize, // Base size
+                height: textHeight,
+                curveSegments: textCurveSegments,
+                bevelEnabled: true,
+                bevelThickness: textBevelThickness,
+                bevelSize: textBevelSize,
+                bevelOffset: 0,
+                bevelSegments: textBevelSegments
+            });
+
+            textGeometry.computeBoundingBox();
+            const textWidth = textGeometry.boundingBox.max.x - textGeometry.boundingBox.min.x;
+            const textHeightGeo = textGeometry.boundingBox.max.y - textGeometry.boundingBox.min.y;
+            textGeometry.translate(-textWidth / 2, -textHeightGeo / 2, 0);
+
+            const textMaterial = new THREE.MeshStandardMaterial({
+                color: textColor, metalness: textMetalness, roughness: textRoughness,
+            });
+            textMesh = new THREE.Mesh(textGeometry, textMaterial);
+            textMesh.position.set(0, 0, heartPositionZ + textPositionZOffset);
+            textMesh.visible = false; // Start hidden
+            // Note: Initial scale is set in updateTextScale() after creation
+            scene.add(textMesh);
+            console.log("Text mesh created at Z:", textMesh.position.z);
+        }
+
+        // *** NEW: Function to scale text based on aspect ratio ***
+        function updateTextScale() {
+            if (!textMesh) return; // Only run if text mesh exists
+
+            const aspect = window.innerWidth / window.innerHeight;
+            let targetScale = 1.0; // Default scale
+
+            if (aspect < mobileAspectThreshold) {
+                targetScale = mobileTextScaleFactor; // Apply mobile scaling
+            }
+
+            // Apply the scale uniformly
+            textMesh.scale.set(targetScale, targetScale, targetScale);
+           // console.log(`Aspect: ${aspect.toFixed(2)}, Text Scale: ${targetScale}`); // For debugging
+        }
+
+
+        function breakHeart() {
+            if (!heart || heartBroken) return;
+            // ... (rest of breakHeart remains the same)
+            heartBroken = true;
+            const breakCenter = new THREE.Vector3(0, 0, heartPositionZ);
+
+            scene.remove(heart);
+            heart.geometry.dispose();
+            heart.material.dispose();
+            heart = null;
+
+            if (textMesh) {
+                 textMesh.visible = true;
+                 console.log("Text made visible.");
+            } else if (fontLoaded) {
+                 createText(); // Create if font loaded but textmesh wasn't
+                 updateTextScale(); // Apply scale after creation
+                 if (textMesh) textMesh.visible = true;
+            } else {
+                console.log("Heart broke, but font not yet loaded. Text will appear when font loads.");
+            }
+
+            // --- Create Fragments ---
+            const fragmentMaterial = new THREE.MeshStandardMaterial({ color: 0xff0000, metalness: 0.3, roughness: 0.6, side: THREE.DoubleSide });
+            const fragmentGeometry = new THREE.TetrahedronGeometry(2.0);
+            for (let i = 0; i < fragmentCount; i++) {
+                const fragment = new THREE.Mesh(fragmentGeometry, fragmentMaterial.clone());
+                fragment.position.copy(breakCenter);
+                fragment.userData.velocity = new THREE.Vector3( (Math.random() - 0.5), (Math.random() - 0.5), (Math.random() - 0.5) ).normalize().multiplyScalar(fragmentSpreadSpeed * (0.5 + Math.random() * 0.5));
+                fragment.userData.angularVelocity = new THREE.Vector3( (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6, (Math.random() - 0.5) * 6 );
+                fragment.userData.life = fragmentLife * (0.8 + Math.random() * 0.4);
+                scene.add(fragment);
+                fragments.push(fragment);
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+
+            updateTextScale(); // *** NEW: Update text scale on resize ***
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            const delta = clock.getDelta();
+
+            // Camera Movement
+            if (!heartBroken) {
+                const targetZ = heartPositionZ + breakDistance;
+                if (camera.position.z > targetZ) {
+                    camera.position.z -= arrowSpeed * delta;
+                    if (camera.position.z <= targetZ) {
+                         camera.position.z = targetZ;
+                         breakHeart();
+                    }
+                }
+                if (heart && camera.position.z <= targetZ && !heartBroken) {
+                     breakHeart();
+                }
+            }
+
+            // Fragment Update
+             if (heartBroken) {
+                for (let i = fragments.length - 1; i >= 0; i--) {
+                    const fragment = fragments[i];
+                    fragment.position.addScaledVector(fragment.userData.velocity, delta);
+                    fragment.rotation.x += fragment.userData.angularVelocity.x * delta;
+                    fragment.rotation.y += fragment.userData.angularVelocity.y * delta;
+                    fragment.rotation.z += fragment.userData.angularVelocity.z * delta;
+                    fragment.userData.velocity.multiplyScalar(0.995);
+                    fragment.userData.life -= delta;
+                    if (fragment.userData.life <= 0) {
+                        scene.remove(fragment);
+                        fragment.material.dispose();
+                        fragments.splice(i, 1);
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        init();
+
+    </script>
+</body>
+</html>
