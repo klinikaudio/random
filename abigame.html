@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Abigail's Dash</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden; /* Prevent scrolling */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0; /* Light grey background */
+            font-family: 'Arial', sans-serif;
+        }
+        canvas {
+            display: block; /* Prevent extra space below canvas */
+            background-color: #70c5ce; /* Default background if Kaboom doesn't override */
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <!-- Kaboom.js library will create the canvas here -->
+    <script src="https://unpkg.com/kaboom@3000.0.1/dist/kaboom.js"></script>
+    <script src="game.js"></script> <!-- Our game logic -->
+</body>
+</html>
