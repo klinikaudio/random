@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abi Cuteness Test</title>
+    <style>
+        /* Basic Reset & Body Styling */
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #fce4ec; /* Light pink background */
+            color: #333;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Container for the content */
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 90%;
+        }
+
+        /* Button Styling */
+        #cuteButton {
+            background-color: #ff80ab; /* Hot pink */
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2em;
+            font-weight: bold;
+            border-radius: 25px; /* More rounded */
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 8px rgba(255, 128, 171, 0.4);
+        }
+
+        #cuteButton:hover {
+            background-color: #f06292; /* Darker pink */
+        }
+
+        #cuteButton:active {
+            transform: scale(0.98);
+        }
+
+        /* Status Message Area */
+        #statusMessage {
+            font-size: 1.1em;
+            color: #555;
+            min-height: 1.5em; /* Prevent layout shift */
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        /* Number Animation Area Styling */
+        #numberAnimation {
+            display: none; /* Hidden by default */
+            justify-content: center;
+            align-items: center;
+            height: 60px;
+            margin-bottom: 20px;
+            background-color: #f1f1f1;
+            border-radius: 8px;
+            padding: 0 10px;
+            overflow: hidden; /* Important for the whirring effect */
+        }
+
+        .digit-slot {
+            font-family: 'Courier New', Courier, monospace; /* Monospaced for number alignment */
+            font-size: 2em;
+            font-weight: bold;
+            color: #ff80ab;
+            margin: 0 5px;
+            width: 25px; /* Fixed width for each digit */
+            text-align: center;
+            animation-duration: 0.1s; /* Speed of individual digit change */
+            animation-timing-function: linear;
+            animation-iteration-count: infinite;
+        }
+
+        /* Keyframes for the whirring digit animation */
+        @keyframes whirDigit {
+            0%   { transform: translateY(-20px); opacity: 0; }
+            20%  { transform: translateY(0); opacity: 1; }
+            80%  { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(20px); opacity: 0; }
+        }
+
+        /* Class to apply animation when running */
+        .digit-slot.animate {
+            animation-name: whirDigit;
+        }
+
+        /* Confirmed Cute specific styling */
+        .confirmed-cute {
+            color: #4caf50; /* Green for confirmed */
+            font-size: 1.3em !important;
+            font-weight: bold;
+        }
+
+        /* Responsive adjustments (mostly handled by flexbox and percentages) */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            #cuteButton {
+                padding: 12px 25px;
+                font-size: 1.1em;
+            }
+            #statusMessage {
+                font-size: 1em;
+            }
+            .digit-slot {
+                font-size: 1.8em;
+                width: 20px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Is Abi Cute?</h1>
+        <button id="cuteButton">Let's Find Out!</button>
+        <div id="statusMessage"></div>
+        <div id="numberAnimation">
+            <span class="digit-slot">0</span>
+            <span class="digit-slot">0</span>
+            <span class="digit-slot">0</span>
+            <span class="digit-slot">0</span>
+            <span class="digit-slot">0</span>
+        </div>
+    </div>
+
+    <script>
+        const cuteButton = document.getElementById('cuteButton');
+        const statusMessage = document.getElementById('statusMessage');
+        const numberAnimationDiv = document.getElementById('numberAnimation');
+        const digitSlots = document.querySelectorAll('.digit-slot');
+
+        let animationIntervalId = null;
+
+        cuteButton.addEventListener('click', () => {
+            // Reset previous state
+            statusMessage.textContent = "Running the numbers...";
+            statusMessage.className = ''; // Remove confirmed-cute class
+            numberAnimationDiv.style.display = 'flex';
+            cuteButton.disabled = true;
+            cuteButton.textContent = 'Calculating...';
+
+            // Start whirring animation
+            digitSlots.forEach(slot => {
+                slot.classList.add('animate');
+            });
+
+            animationIntervalId = setInterval(() => {
+                digitSlots.forEach(slot => {
+                    slot.textContent = Math.floor(Math.random() * 10);
+                });
+            }, 70); // Change numbers every 70ms for a "whirring" effect
+
+            // Simulate calculation time
+            setTimeout(() => {
+                // Stop animation
+                clearInterval(animationIntervalId);
+                digitSlots.forEach(slot => {
+                    slot.classList.remove('animate');
+                    // Optionally set final numbers or clear them
+                    // slot.textContent = '✓'; // Or keep last random
+                });
+                // For a cleaner stop, you might want to hide or clear the numbers
+                // numberAnimationDiv.style.display = 'none'; // Or set numbers to something fixed
+
+                // Display result
+                statusMessage.textContent = "Confirmed Cute!";
+                statusMessage.classList.add('confirmed-cute');
+                
+                cuteButton.disabled = false;
+                cuteButton.textContent = 'Check Again?';
+
+            }, 3000); // 3 seconds delay
+        });
+    </script>
+
+</body>
+</html>
