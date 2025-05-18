@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LinkedIn Style Poll - Mould Detection</title>
+    <style>
+        body {
+            font-family: -apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "Fira Sans", Ubuntu, Oxygen, "Oxygen Sans", Cantarell, "Droid Sans", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Lucida Grande", Helvetica, Arial, sans-serif;
+            background-color: #f3f2ef;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .linkedin-post-container {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 550px; /* Max width for desktop, will shrink on mobile */
+            padding: 15px; /* Adjusted padding for smaller screens */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-sizing: border-box; /* Ensures padding is included in width */
+        }
+
+        .post-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .profile-pic { /* Updated for <img> tag */
+            width: 40px; 
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            flex-shrink: 0; 
+            object-fit: cover; /* Ensures the image covers the area, maintains aspect ratio */
+            border: 1px solid #eee; /* Optional: slight border for the image */
+        }
+
+        .author-info .author-name {
+            font-weight: 600;
+            color: #191919;
+            margin: 0;
+            font-size: 0.9rem; 
+        }
+
+        .author-info .author-title,
+        .author-info .timestamp {
+            font-size: 0.75rem; 
+            color: #606060;
+            margin: 2px 0 0 0;
+        }
+         .author-info .timestamp img {
+            width: 12px; 
+            height: 12px;
+            vertical-align: middle;
+        }
+
+        .post-content .post-title {
+            font-size: 1.1rem; 
+            font-weight: 600;
+            color: #191919;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+
+        .post-content .post-description {
+            font-size: 0.85rem; 
+            color: #333;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .poll-area .poll-option {
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden; 
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        
+        .poll-area .poll-option:not(.voted-on):hover { 
+            background-color: #eef3f8;
+        }
+
+        .poll-option .option-text {
+            color: #0077B5;
+            font-weight: 500;
+            font-size: 0.9rem; 
+        }
+
+        .poll-option .progress-bar-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: #e0e0e0; 
+            width: 0%; 
+            z-index: 0;
+            border-radius: 20px; 
+            opacity: 0;
+            transition: width 0.5s ease-out, opacity 0.5s ease-out;
+        }
+
+        .poll-option.show-results .progress-bar-container {
+            opacity: 1;
+        }
+        
+        .poll-option.user-voted .progress-bar-container {
+             background-color: #d1e9f8; 
+        }
+
+        .poll-option.user-voted {
+            border-color: #0077B5; 
+        }
+        .poll-option.user-voted .option-text,
+        .poll-option.user-voted .vote-details {
+            font-weight: bold;
+        }
+
+
+        .poll-option .option-content {
+            position: relative; 
+            z-index: 1;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .poll-option .vote-details {
+            font-size: 0.8rem; 
+            color: #606060;
+            display: none; 
+            margin-left: 5px; 
+        }
+        .poll-option.show-results .vote-details {
+            display: inline;
+        }
+
+        .total-votes {
+            font-size: 0.75rem; 
+            color: #606060;
+            margin-top: 10px; 
+            text-align: right;
+            display: none; 
+        }
+
+        .solution-reveal {
+            margin-top: 20px; 
+            padding: 15px;
+            background-color: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            display: none; 
+        }
+
+        .solution-reveal h3 {
+            color: #0077B5;
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 1.05rem; 
+        }
+        .solution-reveal p, .solution-reveal ul li {
+            font-size: 0.85rem; 
+            line-height: 1.5;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .solution-reveal ul {
+            padding-left: 20px;
+            margin-top: 0;
+        }
+        .solution-reveal .cta-button {
+            display: inline-block;
+            background-color: #0077B5;
+            color: white;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 20px;
+            font-weight: 500;
+            margin-top: 10px;
+            font-size: 0.9rem; 
+            transition: background-color 0.2s;
+            text-align: center;
+        }
+        .solution-reveal .cta-button:hover {
+            background-color: #005e90;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .linkedin-post-container {
+                padding: 12px;
+            }
+            .post-content .post-title {
+                font-size: 1rem;
+            }
+            .post-content .post-description,
+            .poll-option .option-text,
+            .solution-reveal p, .solution-reveal ul li {
+                font-size: 0.8rem;
+            }
+            .solution-reveal h3 {
+                font-size: 1rem;
+            }
+            .poll-option {
+                padding: 8px 12px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="linkedin-post-container">
+        <div class="post-header">
+            <img src="logo.jfif" alt="Halo Smart Solutions Logo" class="profile-pic">
+            <div class="author-info">
+                <p class="author-name">Halo Smart Solutions</p>
+                <p class="author-title">Enhancing Efficiency, Safety & Wellbeing in UK Homes • Promoting</p>
+                <p class="timestamp">Now • <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' data-supported-dps='16x16' fill='currentColor' class='mercado-match' width='16' height='16' focusable='false'%3E%3Cpath d='M8 1a7 7 0 107 7 7 7 0 00-7-7zM3 8a5 5 0 011-3l.55.55A4 4 0 003 8zm1.18 4.47c.27.27.62.45.98.55h.02A4.94 4.94 0 018 13a5 5 0 01-3.18-1.23l.55-.55c.28-.27.45-.62.55-.98h.02A4.94 4.94 0 018 11a5 5 0 01-1.23-3.18l-.55.55c-.27.28-.62.45-.98.55h-.02A4.94 4.94 0 013 8c0-1.08.35-2.08.93-2.82l-.55-.55A5 5 0 008 3c1.08 0 2.08.35 2.82.93l.55-.55A4 4 0 0113 8a4 4 0 01-1.53 3.18l-.55.55c-.28.27-.45.62-.55.98h-.02A5 5 0 018 13a5 5 0 01-3.82-.77zm7.82-4.47A5 5 0 0012 8a5 5 0 00-1-3l-.55.55A4 4 0 0113 8a4.09 4.09 0 01-1.53 3.18l-.55.55c-.28.27-.45.62-.55.98h-.02A5 5 0 008 13c-1.08 0-2.08-.35-2.82-.93l.55.55A4 4 0 0011 8a4 4 0 001.53-3.18l.55-.55c.28-.27.45-.62.55-.98h.02A5 5 0 008 3c1.08 0 2.08.35 2.82.93l-.55.55A4.09 4.09 0 015 8c0 1.08.35 2.08.93 2.82l.55.55a5 5 0 013.52-1.37z'%3E%3C/path%3E%3C/svg%3E" alt="public icon"></p>
+            </div>
+        </div>
+
+        <div class="post-content">
+            <h1 class="post-title">Can You Spot the Mould? Here’s Why It Might Be Hiding!</h1>
+            <p class="post-description">
+                Mould isn't always obvious. It can lurk in unexpected places, affecting air quality and your home's health.
+                Take our quick quiz: Where do you think mould is MOST LIKELY to hide undetected?
+            </p>
+        </div>
+
+        <div class="poll-area" id="pollArea">
+            <div class="poll-option" data-option-id="0">
+                <div class="progress-bar-container"></div>
+                <div class="option-content">
+                    <span class="option-text">Behind wallpaper (poorly ventilated room)</span>
+                    <span class="vote-details"></span>
+                </div>
+            </div>
+            <div class="poll-option" data-option-id="1">
+                <div class="progress-bar-container"></div>
+                <div class="option-content">
+                    <span class="option-text">On a sun-exposed window sill</span>
+                    <span class="vote-details"></span>
+                </div>
+            </div>
+            <div class="poll-option" data-option-id="2">
+                <div class="progress-bar-container"></div>
+                <div class="option-content">
+                    <span class="option-text">In a dry, open bookshelf</span>
+                    <span class="vote-details"></span>
+                </div>
+            </div>
+             <div class="poll-option" data-option-id="3">
+                <div class="progress-bar-container"></div>
+                <div class="option-content">
+                    <span class="option-text">Under a sink with a slow leak</span>
+                    <span class="vote-details"></span>
+                </div>
+            </div>
+            <p class="total-votes" id="totalVotes"></p>
+        </div>
+
+        <div class="solution-reveal" id="solutionReveal">
+            <h3>The Hidden Truth & The Smart Solution</h3>
+            <p>
+                You've seen how mould can hide! Those tricky spots like "Behind wallpaper..." and "Under a sink with a slow leak..." are prime candidates because they often trap moisture, creating the perfect breeding ground for mould long before it becomes visible.
+            </p>
+            <p>
+                <strong>This is where Halo Smart IoT changes the game.</strong> Our advanced IoT sensors act as your home's early warning system.
+            </p>
+            
+            <h3>How Halo Smart IoT Protects Your Property:</h3>
+            <ul>
+                <li><strong>Early Detection:</strong> Continuously monitors high moisture levels and temperature changes – key indicators of potential mould growth. Get data-driven alerts *before* problems escalate.</li>
+                <li><strong>Proactive Monitoring for Landlords:</strong> Anticipate and prevent issues, streamline property inspections by reducing frequent physical checks, and ensure compliance with UK regulations for safe, habitable properties.</li>
+                <li><strong>Health & Wellbeing for Tenants:</strong> Enjoy peace of mind knowing indoor conditions are monitored, promoting a healthier living environment. This comes at no extra cost to tenants, thanks to battery-operated, wireless hardware.</li>
+                <li><strong>Privacy Respected:</strong> Our solution focuses solely on environmental data (like humidity and temperature) and property conditions, ensuring tenant privacy is always maintained.</li>
+            </ul>
+            <p>
+                Don't wait for mould to appear. Take control of your indoor environment with intelligent monitoring.
+            </p>
+            <a href="https://halosmartiot.com/mould-detection" target="_blank" class="cta-button">Discover Halo Smart IoT & Breathe Easier</a>
+        </div>
+
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const pollArea = document.getElementById('pollArea');
+            const pollOptionsElements = pollArea.querySelectorAll('.poll-option');
+            const totalVotesEl = document.getElementById('totalVotes');
+            const solutionRevealEl = document.getElementById('solutionReveal');
+            
+            let currentVotedOptionId = null; 
+            let totalUserVotes = 0; 
+
+            // Initial poll data - votes start at 0 for a fresh poll on each load
+            let pollData = [
+                { id: 0, text: "Behind wallpaper (poorly ventilated room)", votes: 0 },
+                { id: 1, text: "On a sun-exposed window sill", votes: 0 },
+                { id: 2, text: "In a dry, open bookshelf", votes: 0 },
+                { id: 3, text: "Under a sink with a slow leak", votes: 0 }
+            ];
+            
+            // Add some illustrative base votes (simulating other users)
+            const baseVotes = [
+                Math.floor(Math.random() * 10) + 5,
+                Math.floor(Math.random() * 3),
+                Math.floor(Math.random() * 2),
+                Math.floor(Math.random() * 12) + 7
+            ];
+            pollData.forEach((option, index) => {
+                option.votes = baseVotes[index];
+            });
+            let initialTotalBaseVotes = baseVotes.reduce((sum, current) => sum + current, 0);
+
+
+            pollOptionsElements.forEach(optionEl => {
+                optionEl.addEventListener('click', () => {
+                    const selectedOptionId = parseInt(optionEl.dataset.optionId);
+
+                    if (currentVotedOptionId === selectedOptionId) {
+                        return;
+                    }
+
+                    if (currentVotedOptionId !== null) {
+                        pollData[currentVotedOptionId].votes--; 
+                    } else {
+                        totalUserVotes = 1; 
+                    }
+                    
+                    pollData[selectedOptionId].votes++; 
+                    currentVotedOptionId = selectedOptionId;
+
+                    displayResults();
+                });
+            });
+
+            function displayResults() {
+                let currentTotalVotes = initialTotalBaseVotes + totalUserVotes;
+
+                if (totalUserVotes > 0) {
+                    totalVotesEl.style.display = 'block'; 
+                    totalVotesEl.textContent = `${currentTotalVotes} vote${currentTotalVotes === 1 ? '' : 's'}`;
+                }
+
+
+                pollOptionsElements.forEach(optionEl => {
+                    const optionId = parseInt(optionEl.dataset.optionId);
+                    const optionData = pollData[optionId];
+                    const percentage = currentTotalVotes === 0 ? 0 : Math.round((optionData.votes / currentTotalVotes) * 100);
+
+                    const progressBar = optionEl.querySelector('.progress-bar-container');
+                    const voteDetails = optionEl.querySelector('.vote-details');
+                    
+                    optionEl.classList.add('show-results'); 
+
+                    if (optionId === currentVotedOptionId) {
+                        optionEl.classList.add('user-voted');
+                    } else {
+                        optionEl.classList.remove('user-voted');
+                    }
+                    
+                    progressBar.style.width = `${percentage}%`;
+                    voteDetails.textContent = `${percentage}%`; 
+
+                    optionEl.style.cursor = 'pointer'; 
+                });
+                
+                if (totalUserVotes > 0) { 
+                     solutionRevealEl.style.display = 'block';
+                }
+            }
+             totalVotesEl.textContent = `${initialTotalBaseVotes} vote${initialTotalBaseVotes === 1 ? '' : 's'}`;
+        });
+    </script>
+
+</body>
+</html>
